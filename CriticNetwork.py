@@ -4,7 +4,7 @@ from keras.initializers import normal, identity
 from keras.models import model_from_json, load_model
 #from keras.engine.training import collect_trainable_weights
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Input, merge, Lambda, Activation
+from keras.layers import Dense, Flatten, Input, merge, Lambda, Activation, add
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 import keras.backend as K
@@ -20,12 +20,12 @@ class CriticNetwork(object):
         self.TAU = TAU
         self.LEARNING_RATE = LEARNING_RATE
         self.action_size = action_size
-        
+
         K.set_session(sess)
 
         #Now create the model
-        self.model, self.action, self.state = self.create_critic_network(state_size, action_size)  
-        self.target_model, self.target_action, self.target_state = self.create_critic_network(state_size, action_size)  
+        self.model, self.action, self.state = self.create_critic_network(state_size, action_size)
+        self.target_model, self.target_action, self.target_state = self.create_critic_network(state_size, action_size)
         self.action_grads = tf.gradients(self.model.output, self.action)  #GRADIENTS for policy update
         self.sess.run(tf.initialize_all_variables())
 
@@ -44,15 +44,16 @@ class CriticNetwork(object):
 
     def create_critic_network(self, state_size,action_dim):
         print("Now we build the model")
-        S = Input(shape=[state_size])  
-        A = Input(shape=[action_dim],name='action2')   
+        S = Input(shape=[state_size])
+        A = Input(shape=[action_dim],name='action2')
         w1 = Dense(HIDDEN1_UNITS, activation='relu')(S)
-        a1 = Dense(HIDDEN2_UNITS, activation='linear')(A) 
+        a1 = Dense(HIDDEN2_UNITS, activation='linear')(A)
         h1 = Dense(HIDDEN2_UNITS, activation='linear')(w1)
-        h2 = merge([h1,a1],mode='sum')    
+        # h2 = merge([h1,a1],mode='sum')
+        h2 = add([h1,a1])
         h3 = Dense(HIDDEN2_UNITS, activation='relu')(h2)
-        V = Dense(1,activation='linear')(h3)   
+        V = Dense(1,activation='linear')(h3)
         model = Model(input=[S,A],output=V)
         adam = Adam(lr=self.LEARNING_RATE)
         model.compile(loss='mse', optimizer=adam)
-        return model, A, S 
+        return model, A, S

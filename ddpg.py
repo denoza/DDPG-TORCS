@@ -38,7 +38,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     done = False
     step = 0
     epsilon = 1
-    
+
     #Tensorflow GPU optimization
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -75,30 +75,30 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             ob = env.reset()
 
         s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
-     
+
         total_reward = 0.
-        
-                
+
+
         for j in range(max_steps):
-            loss = 0 
+            loss = 0
             epsilon -= 1.0 / EXPLORE
-            a_t = np.zeros([1,action_dim])    
-            noise_t = np.zeros([1,action_dim])    
+            a_t = np.zeros([1,action_dim])
+            noise_t = np.zeros([1,action_dim])
             a_t_original = actor.model.predict(s_t.reshape(1, s_t.shape[0]))
-            
+
             noise_t[0][0] = OU.function(a_t_original[0][0],  0.0 , 0.60, 0.30)
             noise_t[0][1] = OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
             noise_t[0][2] =  OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
-            
+
             #The following code do the stochastic brake
             """
             if random.random() <= 0.1:
                 noise_t[0][2] += OU.function(noise_t[0][2],  0.2 , 1.00, 0.10)
             else:
-                noise_t[0][2] +=  OU.function(noise_t[0][2], -0.1 , 1.00, 0.05)    
+                noise_t[0][2] +=  OU.function(noise_t[0][2], -0.1 , 1.00, 0.05)
             """
             alpha=train_indicator * max(epsilon, 0)
-            
+
             a_t[0][0] = a_t_original[0][0] + alpha * noise_t[0][0]
             a_t[0][1] = a_t_original[0][1] + alpha * noise_t[0][1]
             a_t[0][2] = a_t_original[0][2] + alpha * noise_t[0][2]
@@ -110,19 +110,19 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             a_t[0][1] = (1-alpha) * a_t_original[0][1] +  alpha * noise_t[0][1]
             a_t[0][2] = (1-alpha) * a_t_original[0][2] +  alpha * noise_t[0][2]
             """
-            if np.mod(j,20) == 10: 
+            if np.mod(j,20) == 10:
                 print("Noise:",alpha*noise_t[0])
-                
+
             """
-            if np.mod(j,10) == 0: 
+            if np.mod(j,10) == 0:
                 print("Episode", i, "Step", step, "predicted action", a_t_original,"action",a_t)
             """
             ob, r_t, done, info = env.step(a_t[0])
 
             s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
-        
+
             buff.add(s_t, a_t[0], r_t, s_t1, done)      #Add replay buffer
-            
+
             #Do the batch update
             batch = buff.getBatch(BATCH_SIZE)
             states = np.asarray([e[0] for e in batch])
@@ -132,14 +132,14 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             dones = np.asarray([e[4] for e in batch])
             y_t = np.asarray([e[2] for e in batch])
 
-            target_q_values = critic.target_model.predict([new_states, actor.target_model.predict(new_states)])  
-           
+            target_q_values = critic.target_model.predict([new_states, actor.target_model.predict(new_states)])
+
             for k in range(len(batch)):
                 if dones[k]==False:
                     y_t[k] = rewards[k] + GAMMA*target_q_values[k]
-       
+
             if (train_indicator):
-                loss += critic.model.train_on_batch([states,actions], y_t) 
+                loss += critic.model.train_on_batch([states,actions], y_t)
                 a_for_grad = actor.model.predict(states)
                 grads = critic.gradients(states, a_for_grad)
                 actor.train(states, grads)
@@ -148,10 +148,10 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
             total_reward += r_t
             s_t = s_t1
-            
-            if np.mod(j,100) == 0: 
+
+            if np.mod(j,100) == 0:
                 print("Episode", i, "Step", step, "Action", a_t, "Reward", r_t, "Loss", loss)
-            
+
             step += 1
             if done:
                 break

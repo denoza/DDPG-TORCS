@@ -23,7 +23,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
-    
+
     K.set_session(sess)
 
     actor = ActorNetwork(sess, state_dim, action_dim, 1, TAU, LRA)
@@ -33,7 +33,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     #Now load the weight
     print("Now we load Actor model's weights")
     try:
-        actor.model.load_weights("actormodel.h5")
+        actor.model.load_weights("actormodel_orig.h5")
         print("Weight load successfully")
     except:
         print("Cannot find the weight")
@@ -47,24 +47,24 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             ob = env.reset()
 
         s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
-     
+
         total_reward = 0.
-        
-                
+
+
         for j in range(max_steps):
             a_t_original = actor.model.predict(s_t.reshape(1, s_t.shape[0]))
-            
+
             ob, r_t, done, info = env.step(a_t_original[0])
 
             s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
-        
+
 
             total_reward += r_t
             s_t = s_t1
-            
-            if np.mod(j,100) == 0: 
+
+            if np.mod(j,100) == 0:
                 print("Episode", i, "Step", step, "Action", a_t_original[0], "Reward", r_t)
-            
+
             step += 1
             if done:
                 break
