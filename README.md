@@ -1,7 +1,7 @@
 ## Update
 
 This code is a fork of https://github.com/xianhong/DDPG-TORCS
-I have updated a few lines here and there to run it with the updated Keras and Tensorflow. Please check [Environment Setup](#Environment setup) for more info.
+I have updated a few lines here and there to run it with the updated Keras and Tensorflow. Please check [Environment Setup](#environment-setup) for more info.
 
 ## Using Keras and Deep Deterministic Policy Gradient to play TORCS
 
@@ -11,7 +11,7 @@ Minor changes to hyper parameters of the original DDPG codes to reduce computati
 
 The 'torcs.mp4' file is a video clip capturing a sample racing drive on TORCS after the model having been trained for more than 310K steps.
 
-
+<a name="environment-setup"></a>
 # Environment setup:
 * OS: Ubuntu 16.04 LTS
 * Python 3.5
